@@ -6,9 +6,12 @@
 # @contact: zhouqiang847@gmail.com
 
 
-from testtools import testcase
 import unittest
+from unittest import TestResult
 
+from testtools import testcase
+from testtools import runtest
+from testtools.testcase import run_test_with
 
 class TestTestCase(testcase.TestCase):
     def test_a(self):
@@ -36,6 +39,22 @@ class TestTestCase(testcase.TestCase):
     @testcase.expectedFailure
     def test_g(self):
         raise AssertionError()
+
+    def test_h(self):
+        class FooRunTest(runtest.RunTest):
+            def __init__(self, case, handlers=None, bar=None):
+                super(FooRunTest, self).__init__(case, handlers)
+                self.bar = bar
+            def run(self, result=None):
+                return self.bar
+        class SomeCase(testcase.TestCase):
+            @run_test_with(FooRunTest, bar='k')
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo')
+        from_run_test = case.run(result)
+        assert from_run_test == 'k'
 
 if __name__ == '__main__':
     suit = unittest.TestLoader().loadTestsFromTestCase(TestTestCase)

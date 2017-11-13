@@ -92,6 +92,35 @@ def expectedFailure(func):
     return wrapper
 
 
+def run_test_with(test_runner, **kwargs):
+    """Decorate a test as using a specific ``RunTest``.
+
+    e.g.::
+
+      @run_test_with(CustomRunner, timeout=42)
+      def test_foo(self):
+          self.assertTrue(True)
+
+    :param test_runner: A ``RunTest`` factory that takes a test case and an
+        optional list of exception handlers.  See ``RunTest``.
+    :param kwargs: Keyword arguments to pass on as extra arguments to
+        'test_runner'.
+    :return: A decorator to be used for marking a test as needing a special
+        runner.
+    """
+
+    def decorator(function):
+        # Set an attribute on 'function' which will inform TestCase how to
+        # make the runner.
+        def _run_test_with(case, handlers=None):
+            return test_runner(case, handlers=handlers, **kwargs)
+
+        function._run_test_with = _run_test_with
+        return function
+
+    return decorator
+
+
 class TestCase(unittest.TestCase):
     """Extensions to the basic TestCase."""
 
@@ -101,8 +130,12 @@ class TestCase(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         """Construct a TestCase."""
+        runTest = kwargs.pop('runTest', None)
         super(TestCase, self).__init__(*args, **kwargs)
-        self.__RunTest = self.run_tests_with
+        test_method = self._get_test_method()
+        if runTest is None:
+            runTest = getattr(test_method, '_run_test_with', self.run_tests_with)
+        self.__RunTest = runTest
 
         self.exception_handlers = [
             (self.skipException, self._report_skip),
@@ -117,7 +150,6 @@ class TestCase(unittest.TestCase):
             self, self.exception_handlers
         )
         return run_test.run(result)
-
 
     def _get_test_method(self):
         method_name = getattr(self, '_testMethodName')
@@ -148,7 +180,7 @@ class TestCase(unittest.TestCase):
 
     @staticmethod
     def _report_failure(self, result, err):
-        result.aaddFailure(self, err)
+        result.addFailure(self, err)
 
     @staticmethod
     def _report_expected_failure(self, result, err):
