@@ -18,26 +18,26 @@ class TestTestCase(testcase.TestCase):
         pass
 
     @testcase.skip("this is a test")
-    def test_b(self):
+    def test_skip_decorator(self):
         pass
 
     @testcase.skipIf(True, 'skip if test')
-    def test_c(self):
+    def test_skipIf_decorator(self):
         raise AssertionError()
 
     @testcase.skipUnless(False, 'skip unless test')
-    def test_d(self):
+    def test_skipUnless_decorator(self):
         pass
 
-    def test_e(self):
+    def test_exception(self):
         raise Exception('Exception test')
 
     @testcase.expectedFailure
-    def test_f(self):
+    def test_raising__UnexpectedSuccess(self):
         pass
 
     @testcase.expectedFailure
-    def test_g(self):
+    def test_unittest_expectedFailure_decorator_works_with_failure(self):
         raise AssertionError()
 
     def test_h(self):
